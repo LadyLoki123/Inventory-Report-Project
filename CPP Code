@@ -7,7 +7,7 @@
 
 //The goal is to create, search, and manipulate values in arrays that are part of a struct, and to
 //read in and output data to separate files. The input files were provided by the professor, and are
-//included as files in this project.
+//included as files in this project. All lines are limited to 100 characters to enhance readability.
 
 ///Documentation Block
 //Program Flow:
