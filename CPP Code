@@ -1,0 +1,591 @@
+//-------------------------------------------------------------------------------------------------
+//Exercise 7 Grading Block
+//Programmer: Lauren White
+
+//This project is based on a structured programming approach taught in my Computer Science degree
+//courses. Each part is broken down into several functions.
+
+//The goal is to create, search, and manipulate values in arrays that are part of a struct, and to
+//read in and output data to separate files. The input files were provided by the professor, and are
+//included as files in this project.
+
+///Documentation Block
+//Program Flow:
+//  Open the logical input file, fin for inventory.txt
+//  Open the logical input file, updateFile for update.txt
+//  Open the logical output file, fout for inventoryreport.txt
+//  Input the part ID, the wholesale cost, the markup percentage and the
+//    quantity in stock from the input file inventory.txt
+//  Calculate the markup amount and the retail price of each item
+//  Calculate the potential profit and the  inventory value for each item
+//  Output the initial inventory data to the output file, inventoryReport
+//  Calculate the total profit
+//  Calculate the total inventory value
+//  Output the total profit and the total inventory value to the output file,
+//    Inventory Report
+//  Output a report where the ID has the letter 'X' to the output file, 
+//    Inventory Report
+//  Output a report where the ID has the letter 'B' to the output file, 
+//    Inventory Report
+//  Output a report of items with a quantity less than or equal to 10 to the
+//    output file, Inventory Report
+//  Output a report of items with a quantity less than or equal to 1000 to the
+//    output file, Inventory Report
+//  Input an update ID from the Update Data File
+//  While the Update File has data
+//    For each item in the inventory array that does not match the ID
+//      Determine if the ID matches the update ID
+//        Assign a new quantity to the items quantity
+//        Calculate potential profit for the item
+//        Calculate inventory value for the item
+//        Assign match to true 
+//    Input an update ID from the Update Data File      
+//  Close Update File
+//  Output the updated inventory data to the output file, inventoryReport
+//  Calculate the total profit
+//  Calculate the total inventory value
+//  Output the total profit and the total inventory value to the output file,
+//    Inventory Report
+//  Close Inventory File and Inventory Report File
+//-------------------------------------------------------------------------------------------------
+
+///Program Set-Up
+
+//For input and output on the screen
+#include <iostream>
+
+//For formatting of the output
+#include <iomanip>
+
+//To use the string data type
+#include <string>
+
+//To include input and output files
+#include <fstream>
+
+using namespace std;
+
+const string COLLEGE = "SUNY Broome Community College";
+const string MY_NAME = "Lauren White";
+const string COURSE_NAME = "CST 133";
+const int DIVIDER_WIDTH = 100;
+const int MAX_ITEMS = 20;
+
+struct inventoryType
+{
+	string id;
+	double wholesaleCost = 0;
+	double markUpPercent = 0;
+	double markUpAmount = 0;
+	double retailPrice = 0;
+	double potentialProfit = 0;
+	double inventoryValue = 0;
+	int quantity = 0;
+};
+
+///Function Prototypes
+
+///------------------------------------------------------------------------------------------------
+///void/void functions
+///------------------------------------------------------------------------------------------------
+void OpenFiles(ifstream& fin, ifstream& updateFile, ofstream& fout);
+
+void OutputHeading(ofstream& fout);
+
+void InventoryReport(ofstream& fout, string title, inventoryType item[], int numberofItems);
+
+void TotalsReport(ofstream& fout, double totalProfit, double totalValue);
+
+void CloseFiles(ifstream& fin, ifstream& updateFile, ofstream& fout);
+
+///------------------------------------------------------------------------------------------------
+///void/value functions
+///------------------------------------------------------------------------------------------------
+
+void OutputDivider(ofstream& fout, int numberOfSymbols, char symbol);
+
+double CalculateTotals(inventoryType item[], int numberofItems, int choice, double total);
+
+void FindChar(ofstream& fout, inventoryType item[], int numberofItems, char searchCh, 
+	int timesFound);
+
+void CheckInventory(ofstream& fout, inventoryType item[], int numberofItems, int searchQuantity,
+	int timesFound);
+
+///------------------------------------------------------------------------------------------------
+///void/reference functions 
+///------------------------------------------------------------------------------------------------
+
+void ReadItemData(ifstream& fin, inventoryType item[], int& numberofItems);
+
+void CalculatePrice(inventoryType item[], int numberofItems);
+
+void CalculateProfit(inventoryType item[], int numberofItems);
+
+void UpdateInventory(ifstream& updateFile, inventoryType item[], int numberofItems);
+
+///------------------------------------------------------------------------------------------------
+///single return functions
+///------------------------------------------------------------------------------------------------
+
+double RoundUp(double amount);
+
+///Program Begins
+
+int main(void)
+{
+	ifstream fin;
+	ifstream updateFile;
+	ofstream fout;
+
+	string title;
+
+	inventoryType item[MAX_ITEMS];
+
+	int numberofItems;
+	int timesFound = 0;
+
+	double total = 0;
+	double totalProfit;
+	double totalValue;
+
+	//char searchCh;
+
+	//Open the input and output files
+	OpenFiles(fin, updateFile, fout);
+
+	//Set up the precision for the output file, fout
+	fout << fixed << setprecision(2);
+
+	//Input data into items from the input file
+	ReadItemData(fin, item, numberofItems);
+
+	//Calculate the markup amount and the retail price of each item
+	CalculatePrice(item, numberofItems);
+
+	//Calculate the potential profit and the inventory value for each item
+	CalculateProfit(item, numberofItems);
+
+	//Output a heading to the output file
+	OutputHeading(fout);
+
+	//Output the initial inventory data to the output file, inventoryReport
+	InventoryReport(fout, "Initial", item, numberofItems);
+
+	//Calculate the total profit
+	totalProfit = CalculateTotals(item, numberofItems, 1, total);
+
+	//Calculate the total inventory value
+	totalValue = CalculateTotals(item, numberofItems, 2, total);
+
+	//Output the total profit and the total inventory value to the output file 
+	TotalsReport(fout, totalProfit, totalValue);
+
+	//Output a report where the ID has the letter 'X' to the output file
+	FindChar(fout, item, numberofItems, 'X', timesFound);
+
+	//Output a report where the ID has the letter 'B' to the output file
+	FindChar(fout, item, numberofItems, 'B', timesFound);
+
+	//Output a report of items with a quantity less than or equal to 10 to the output file
+	CheckInventory(fout, item, numberofItems, 10, timesFound);
+
+	//Output a report of items with a quantity less than or equal to 1000 to the output file
+	CheckInventory(fout, item, numberofItems, 1000, timesFound);
+
+	//Update the inventory data using the input file, Update.txt
+	UpdateInventory(updateFile, item, numberofItems);
+	
+	//Output the updated inventory data to the output file, inventoryReport
+	InventoryReport(fout, "Final", item, numberofItems);
+
+	//Calculate the updated total profit
+	totalProfit = CalculateTotals(item, numberofItems, 1, total);
+	
+	//Calculate the updated total inventory value
+	totalValue = CalculateTotals(item, numberofItems, 2, total);
+	
+	//Output the total profit and the total inventory value to the output file
+	TotalsReport(fout, totalProfit, totalValue);
+
+	//Close the input and output files
+	CloseFiles(fin, updateFile, fout);
+
+	return 0;
+}
+
+//-------------------------------------------------------------------------------------------------
+// OpenFiles -   Opens the input and output files           
+//-------------------------------------------------------------------------------------------------
+void OpenFiles(ifstream& fin, ifstream& updateFile, ofstream& fout)
+{
+	//Open the logical input file, fin for inventory.txt
+	fin.open("Inventory.txt");
+
+	//Open the logical input file, updateFile for update.txt
+	updateFile.open("Update.txt");
+
+	//Open the logical output file, fout for inventoryreport.txt
+	fout.open("InventoryReport.txt");
+}
+
+//-------------------------------------------------------------------------------------------------
+// OutputDivider -   Outputs on the screen the symbol
+//                  the number of times specified by numberOfSymbols
+//-------------------------------------------------------------------------------------------------
+void OutputDivider(ofstream& fout, int numberOfSymbols, char symbol)
+{
+	//Output a line of chosen width using chosen symbols
+	fout << setfill(symbol) << setw(numberOfSymbols)
+		<< ' ' << setfill(' ') << endl;
+
+}
+
+//-------------------------------------------------------------------------------------------------
+// OutputHeading - Outputs the course heading on the screen
+//-------------------------------------------------------------------------------------------------
+void OutputHeading(ofstream& fout)
+{
+	int stringLength;
+
+	//Outputs on the screen 100 of symbol
+	OutputDivider(fout, 100, '*');
+
+	//Output to the output file the programmer's name and college
+	stringLength = static_cast<int>(COLLEGE.length());
+	fout << setw((DIVIDER_WIDTH + stringLength) / 2) << COLLEGE << endl;
+	stringLength = static_cast<int>(MY_NAME.length());
+	fout << setw((DIVIDER_WIDTH + stringLength) / 2) << MY_NAME << endl;
+	stringLength = static_cast<int>(COURSE_NAME.length());
+	fout << setw((DIVIDER_WIDTH + stringLength) / 2) << COURSE_NAME << endl;
+
+	//Outputs on the screen 100 of symbol
+	OutputDivider(fout, 100, '*');
+}
+
+//-------------------------------------------------------------------------------------------------
+//ReadItemData -	reads the data from an input file into 
+//					an array of struct
+//-------------------------------------------------------------------------------------------------
+void ReadItemData(ifstream& fin, inventoryType item[], int& numberofItems)
+{
+	int itemIndex;
+
+	//Set index to the first position in the array
+	itemIndex = 0;
+
+	//Input the part ID from the input file
+	getline(fin, item[itemIndex].id, ',');
+
+	//Ignore the comma after the ID
+	fin.ignore();
+
+	//While there is data in the input file
+	while (fin)
+	{
+		//Input the wholesale cost from the input file
+		fin >> item[itemIndex].wholesaleCost;
+
+		//Input the markup percentage from the input file
+		fin >> item[itemIndex].markUpPercent;
+
+		//Input the quantity in stock from the input file
+		fin >> item[itemIndex].quantity;
+
+		//Ignore rest of characters on line, move to next line in the input file
+		fin.ignore(100, '\n');
+
+		//Increment index 
+		itemIndex++;
+
+		//Input the next part ID from the input file
+		getline(fin, item[itemIndex].id, ',');
+
+		//Ignore the comma after the ID
+		fin.ignore();
+	}
+
+	//Set the tag field
+	numberofItems = itemIndex;
+}
+
+//-------------------------------------------------------------------------------------------------
+// RoundUp -	Rounds up the given number
+//-------------------------------------------------------------------------------------------------
+
+double RoundUp(double amount)
+{
+	int intAmount;
+	int tempInt;
+	int testDigit;
+
+	//Calculate the int value of the amount
+	intAmount = static_cast<int>(amount * 1000);
+
+	//Calculate the int value of 3 places
+	tempInt = static_cast<int>(amount * 100);
+
+	//Calculate the digit to test
+	testDigit = intAmount - tempInt * 10;
+
+	//If this value is 5 or greater, round up the number
+	if (testDigit >= 5)
+	{
+		amount = amount + 0.005;
+	}
+
+	//Return the amount
+	return amount;
+}
+
+//-------------------------------------------------------------------------------------------------
+// CalculatePrice -	Calculates the markup amount and the retail price of 
+//					each item            
+//-------------------------------------------------------------------------------------------------
+void CalculatePrice(inventoryType item[], int numberofItems)
+{	
+	int itemIndex;
+
+	//For each item in the inventory structure
+	for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+	{
+		//Calculate the markup amount (wholesale cost times the markup percent)
+		item[itemIndex].markUpAmount = 
+			item[itemIndex].wholesaleCost * item[itemIndex].markUpPercent;
+
+		//Round up the markup amount to get the final markup amount
+		item[itemIndex].markUpAmount = RoundUp(item[itemIndex].markUpAmount);
+
+		//Calculate the retail price (wholesale cost plus the final markup amount)
+		item[itemIndex].retailPrice = item[itemIndex].wholesaleCost + item[itemIndex].markUpAmount;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+// CalculateProfit -	Calculates the potential profit and the  inventory 
+//						value for each item           
+//-------------------------------------------------------------------------------------------------
+
+void CalculateProfit(inventoryType item[], int numberofItems)
+{
+ 	int itemIndex;
+
+	//For each item in the inventory structure
+	for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+	{
+		//Calculate the potential profit for each item (markup amount times quantity)
+		item[itemIndex].potentialProfit = item[itemIndex].markUpAmount * item[itemIndex].quantity;
+
+		//Calculate the inventory value for each item (wholesale cost times quantity)
+		item[itemIndex].inventoryValue = item[itemIndex].wholesaleCost * item[itemIndex].quantity;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+// InventoryReport -	Outputs a report on inventory statistics to the 
+//						output file      
+//-------------------------------------------------------------------------------------------------
+void InventoryReport(ofstream& fout, string title, inventoryType item[], int numberofItems)
+{
+	int itemIndex;
+	int stringLength;
+	title = title + " Inventory" + " Report";
+
+	//Output the title to the report
+	stringLength = static_cast<int>(title.length());
+	fout << setw((DIVIDER_WIDTH + stringLength) / 2) << title << endl;
+
+	OutputDivider(fout, 100, '-');
+
+	//Output the column headers to the report
+	fout << left << setw(10) << "ID" << setw(8) << right << "Markup %" << setw(13) << "Cost" 
+		<< setw(13) << "Markup $" << setw(13) << "Price" << setw(15) << "Profit" << setw(15) 
+		<< "Value" << setw(12) << "Quantity" << endl;
+
+	OutputDivider(fout, 100, '-');
+
+	//Set index to the first position in the array
+	itemIndex = 0;
+
+	for (itemIndex; itemIndex < MAX_ITEMS; itemIndex++)
+	{
+		fout << left << item[itemIndex].id << setw(12) << right << item[itemIndex].markUpPercent 
+			<< setw(13) << item[itemIndex].wholesaleCost << setw(13) 
+			<< item[itemIndex].markUpAmount << setw(13) << item[itemIndex].retailPrice << setw(15) 
+			<< item[itemIndex].potentialProfit << setw(15) << item[itemIndex].inventoryValue 
+			<< setw(12) << item[itemIndex].quantity << endl;
+	}
+
+	OutputDivider(fout, 100, '-');
+}
+
+//-------------------------------------------------------------------------------------------------
+// CalculateTotals -	Calculates the total profit or total inventory value
+//						based on the choice called      
+//-------------------------------------------------------------------------------------------------
+double CalculateTotals(inventoryType item[], int numberofItems, int choice, double total)
+{
+	int itemIndex;
+
+	//If the choice flag is 1, calculate the total profit
+	if (choice == 1)
+	{
+		//For each item in the inventory structure
+		for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+		{
+			//Add up the potential profit of each item
+			total = total + item[itemIndex].potentialProfit;
+		}
+	}
+
+	//If the choice flag is 1, calculate the total inventory value
+	else if (choice == 2)
+	{
+		//For each item in the inventory structure
+		for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+		{
+			//Add up the inventory value of each item
+			total = total + item[itemIndex].inventoryValue;
+		}
+	}
+
+	return total;
+}
+
+//-------------------------------------------------------------------------------------------------
+// TotalsReport -	Outputs the total profit and the total inventory value to
+//					the output file  
+//-------------------------------------------------------------------------------------------------
+void TotalsReport(ofstream& fout, double totalProfit, double totalValue)
+{
+	//Output the total profit and the total inventory value to the screen with leader dots
+	fout << "Total Profit" << setw(60) << setfill('.') << totalProfit << endl;
+	fout << "Total Value" << setw(76) << setfill('.') << totalValue << endl;
+
+	OutputDivider(fout, 100, '*');
+}
+
+//-------------------------------------------------------------------------------------------------
+// FindChar -	Determines the number of inventory IDs that contain the
+//				character specified in the function call      
+//-------------------------------------------------------------------------------------------------
+void FindChar(ofstream& fout, inventoryType item[], int numberofItems, char searchCh, 
+	int timesFound)
+{
+	int itemIndex;
+	int findResult;
+
+	//Output the section header to the output file
+	fout << "Item IDs Containing " << searchCh << ":" << endl;
+	fout << "ID" << setw(20) << "Quantity" << endl;
+	OutputDivider(fout, 100, '-');
+
+	//For each item in the inventory structure
+	for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+	{
+		//Determine whether the character is in the item ID
+		findResult = static_cast<int>(item[itemIndex].id.find(searchCh));
+
+		//If the character index is between 0 and the length of the ID
+		if (0 <= findResult && findResult < static_cast<int>(item[itemIndex].id.length()))
+		{
+			//Output the item ID containing the search character, as well as the quantity
+			fout << item[itemIndex].id << setw(16) << item[itemIndex].quantity << endl;
+
+			//Increment the counter for the number of times the character is found
+			timesFound++;
+		}
+	}
+	//Output the count of IDs with the search character to the output file
+	OutputDivider(fout, 100, '-');
+	fout << "The number of IDs containing the letter " << searchCh << " is " << timesFound << endl;
+	OutputDivider(fout, 100, '*');
+}
+
+//-------------------------------------------------------------------------------------------------
+// CheckInventory -	Determines whether the quantity of an item is above or 
+//					below the specified value     
+//-------------------------------------------------------------------------------------------------
+void CheckInventory(ofstream& fout, inventoryType item[], int numberofItems, int searchQuantity,
+	int timesFound)
+{
+	int itemIndex;
+
+	//Output the section header to the output file
+	fout << "Low-Stock Items - Quantity of " << searchQuantity << " or less:" << endl;
+	fout << "ID" << setw(20) << "Quantity" << endl;
+	OutputDivider(fout, 100, '-');
+
+	//For each item in the inventory structure
+	for (itemIndex = 0; itemIndex < numberofItems; itemIndex++)
+	{
+		//If the quantity of the item is less than the search quantity
+		if (item[itemIndex].quantity <= searchQuantity)
+		{
+			//Output the item ID, as well as the quantity
+			fout << item[itemIndex].id << setw(16) << item[itemIndex].quantity << endl;
+		}
+	}
+	OutputDivider(fout, 100, '*');
+}
+
+//-------------------------------------------------------------------------------------------------
+// UpdateInventory -	Update the quantity of an item based on the input ID    
+//-------------------------------------------------------------------------------------------------
+void UpdateInventory (ifstream& updateFile, inventoryType item[], int numberofItems)
+{
+	int itemIndex;
+	string updateID;
+	int updateQuantity;
+	bool match;
+
+	//Set index to the first position in the array
+	itemIndex = 0;
+
+	//While the Update File has data
+	while (updateFile)
+	{
+		//Input an update ID from the Update Data File
+		getline(updateFile, updateID, ',');
+
+		//Ignore the comma after the ID
+		updateFile.ignore();
+
+		//Input the update quantity from the Update Data File
+		updateFile >> updateQuantity;
+
+		//Ignore rest of characters on line, move to next line in the input file
+		updateFile.ignore(100, '\n');
+
+		//Assign the match flag to false 
+		match = false;
+
+		//For each item in the inventory array that does not match the ID
+		for (itemIndex = 0; itemIndex < numberofItems && !match; itemIndex ++)
+		{
+			//Determine if the ID matches the update ID
+			if (updateID == item[itemIndex].id)
+			{
+				//Assign a new quantity to the item's quantity
+				item[itemIndex].quantity = item[itemIndex].quantity + updateQuantity;
+
+				//Calculate potential profit and inventory value for the item
+				CalculateProfit(item, numberofItems);
+				
+				//Assign match to true 
+				match = true;
+			}
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+// CloseFiles -   Closes the input and output files            
+//-------------------------------------------------------------------------------------------------
+void CloseFiles(ifstream& fin, ifstream& updateFile, ofstream& fout)
+{
+	//Close Inventory File, Update File, and Inventory Report File
+	fin.close();
+	updateFile.close();
+	fout.close();
+}
